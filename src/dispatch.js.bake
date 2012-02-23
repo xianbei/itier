@@ -1,0 +1,112 @@
+// +------------------------------------------------------------------------+
+// | itier请求处理类                                                        |
+// +------------------------------------------------------------------------+
+// | Copygight (c) 2003 - 2012 Taobao.com. All Rights Reserved              |
+// +------------------------------------------------------------------------+
+// | Author: sanxing <sanxing@taobao.com>                                   |
+// +------------------------------------------------------------------------+
+// | 2011年10月21日                                                         |
+// +------------------------------------------------------------------------+
+
+var conf=require('../conf');
+
+//安全机制,防止被攻击
+var maxParamsCount=100;
+
+var dispatch=function(req,res){
+	this.req=req;
+	this.res=res;
+	this.req.url=decodeURIComponent(this.req.url);
+}
+
+//处理
+dispatch.prototype.load=function(){
+
+	var _=this.req;
+	var firstCode=_.url.substr(0,1);
+	var u='';
+
+	if(firstCode=='/'){
+		var u=_.url.substr(1);
+	}
+	else{
+		u=_.url;
+	}
+
+	var url=u.split('/',maxParamsCount);
+	var controller=url[0].toLowerCase();
+
+	if(controller=='status.html'){
+		controller='status';
+	}
+
+	//去掉controller, 组合新url
+	url.shift();
+
+	var Urlnew=url.join('/');
+	this.req.url=Urlnew;
+
+	try{
+		var obj=require('./controller/' + controller + '.js');
+		var _obj=obj.init(this.req,this.res);
+		_obj.load();
+	}catch(e){
+    log.excp(e.stack);
+		this.tryCatch(e,'系统错误',400);
+	}
+}
+
+dispatch.prototype.tryCatch=function(e,m,c){
+	
+	var format=this.getFormat();
+	
+	var sep=String.fromCharCode(1);
+	
+	var string='';
+
+	if(typeof m=='undefined' || m==''){
+		m='系统错误';
+	}
+
+	if(typeof c=='undefined' || c==''){
+		c=400;
+	}
+	
+	switch(format){
+		case 'plain':
+			var s=[conf.version,c,m,0,0,0];
+			string=s.join(sep);
+			break;
+		case 'json':
+			string='{"v":"' + conf.version + '","c":' + c + ',"m":"' + m + '","t":0,"n":0,"fn":0}';
+			break;
+		default:
+			var s=[conf.version,c,m,0,0,0];
+			string=s.join(sep);
+			break;
+	}
+
+	log.error( '[m]: ' + e.message + ' [remoteAddress]: ' + this.req.connection.remoteAddress + ' [request url]: ' + this.req.url);
+	
+	this.res.end(string);
+	return;
+}
+
+//获取客户端请求数据的格式
+dispatch.prototype.getFormat=function(){
+
+	var _=this.req.headers;
+	
+	if(typeof _['x_itier_format']=='undefined' && conf.run_mode=='test'){
+		return 'plain';
+	}
+	else if( typeof _['x_itier_format']=='undefined' ){
+		return '';
+	}
+
+	return _['x_itier_format'];
+}
+
+exports.fn=function(req,res){
+	return new dispatch(req,res);
+}

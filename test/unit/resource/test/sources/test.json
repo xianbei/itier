@@ -1,0 +1,84 @@
+{
+	"test_service_a":{
+		"config":"select id as num from service_a.table where ##fm## order by num DESC limit 1,2",
+		"params":{
+			"fm":[{
+				"type":"string",
+				"pos":"##fm##"
+			}]
+		}
+  },
+	"test_as_order":{
+		"config":"select id as num from service_a.table where ##fm## order by id DESC",
+		"params":{
+			"fm":[{
+				"type":"string",
+				"pos":"##fm##"
+			}]
+		}
+  },
+	"test_service_b":{
+		"config":"select name from service_b.table where ##minId## order by name DESC",
+		"params":{
+			"minId":[{
+				"type":"string",
+				"pos":"##minId##"
+			}]
+		}
+  },
+  "test_innerjoin" : {
+    "config" : "select * from service_a.table as sa  inner join service_b.table as sb on sa.id=sb.id where ##fm## and ##minId##",
+    "params" : {
+      "fm" : [{
+        "type" : "string",
+        "pos"  : "##fm##",
+        "replace" : "sa._params.fm"
+      }],
+      "minId" : [{
+        "type" : "int",
+        "pos" : "##minId##",
+        "replace" : "sb._params..minId"
+      }] 
+    }
+  },
+  "test_leftjoin" : {
+    "config" : "select sa.id ,sa.sex ,sb.name ,sb.type from service_a.table as sa left join service_b.table as sb on sa.id=sb.id where ##fm## and ##minId##",
+    "params" : {
+      "fm" : [{
+        "type" : "string",
+        "pos"  : "##fm##",
+        "replace" : "sa._params.fm"
+      }],
+      "minId" : [{
+        "type" : "int",
+        "pos" : "##minId##",
+        "replace" : "sb._params.minId"
+      }] 
+    }
+  },
+  "test_union" : {
+    "config" : "select sa.id as id,sa.sex as type from service_a.table as sa where ##fm## union SELECT sb.id as id,sb.type as type from service_b.table as sb where ##minId##",
+    "params" : {
+      "fm" : [{
+        "type" : "string",
+        "pos"  : "##fm##",
+        "replace" : "sa.fm"
+      }],
+      "minId" : [{
+        "type" : "int",
+        "pos" : "##minId##",
+        "replace" : "sb.minId"
+      }] 
+    }
+  },
+	"test_mysql":{
+		"config":"select a.username AS f0,a.truename AS f1 from mysql.meta_user_info AS a where ##WHERE##",
+		"params":{
+			"id":[{
+				"type":"int",
+				"pos":"##WHERE##",
+				"replace":"a.id"
+			}]
+		}
+	}
+}

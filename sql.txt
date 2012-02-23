@@ -1,0 +1,274 @@
+
+配置语法详细介绍:
+
+iTier是基于后端数据源依赖关系的查询中间层系统,核心思想是将后端数据源服务抽象
+成类似数据库中的"库表"概念,通过对后端数据源间依赖关系的描述来定义查询
+
+一、配置语法
+	
+  采用类sql语法,支持的语法格式表示如下
+	
+  SELECT
+    [ DISTINCT ]
+      select_expr, ...
+      FROM table_references
+      [WHERE where_definition]
+      [GROUP BY {col_name | expr}]
+      [ORDER BY {col_name | expr} [ASC | DESC]]
+      [LIMIT {[offset,] row_count}]
+    [UNION SELECT.... ]
+
+  支持join、union,支持子sql(目前仅用在table_references部分),支持action配置嵌套,
+  支持插件(聚合函数形式)
+
+二、select_expr部分
+	
+  1、不支持算术运算符,比较运算符,比较函数,逻辑操作符,控制流程函数
+  2、支持圆括号,用于表示聚合函数或插件的作用域
+  3、支持插件,格式跟 sql语法中的聚合函数类似。关于插件的详细介绍,请查阅第五部分
+  4、字段支持前缀、别名
+  5、支持跟后端数据源相关的聚合函数。例如 mysql原生支持的函数 sum等,
+     如果想更改后端数据源支持的聚合函数,请修改对应的loader内的聚合函数设置
+
+三、table_references部分
+	
+  1、table_references部分采用类似sql的 "库.表"理念,分别用 应用名 代替 库、服务名
+     代替 表。例如mysql中有某表user,则使用方法为 ...from mysql.user...
+     按照这种规则,如果某个应用为a,a中有服务为b,则使用方法为 ...from a.b...
+	
+  2、同时iTier支持action级别的嵌套配置,如果是action类型的服务,则调用方式为 
+     "action.action名字",action名字部分默认为当前文件中action配置,同时支持跨目录
+     的全局调用,由于配置文件采用三级目录形式,所以action部分调用其他目录或文件中的
+     action的话需要采用"action.目录.文件.action名字"的完整路径形式
+
+  3、join部分支持 inner join 和 left join,iTier内部通过后端数据源之间的依赖关系进
+     行join操作
+
+四、where_definition部分
+	
+  1、支持比较运算符: =、>、>=、<、<=、!=、IN、NOT IN、LIKE、NOT LIKE、BETWEEN
+  2、支持字段别名
+
+五、GROUP BY部分
+	
+  支持字段别名、前缀
+
+六、ORDER BY部分
+	
+  1、支持字段别名、前缀
+  2、asc表示正序排列, desc表示倒序排列
+
+七、LIMIT部分
+	
+  采用 LIMIT {[offset,] row_count}格式,
+  offset表示偏移量,默认为0, row_count为从偏移量开始的条数
+
+八、iTier解析原理:
+
+  iTier会首先分析sql语句中用到的后端服务,如果table_references部分都是mysql,则iTier不
+  会做任何处理,将配置直接发送至mysql loader处理,因为 mysql 本身就支持这种语法,我们无
+  需做过多的干涉,如果发现是其他的服务或者是多个不同的服务,我们将通过分拆请求的方式进
+  行处理,然后再对请求的数据进行最后的join及union操作	最后调用渲染程序对返回的数据进
+  行渲染
+
+九、插件
+
+  1、 插件是以类似sql语法中的聚合函数的形式出现的,如插件a在某个字段上的使用方式是这样
+    的 select a(field,arguments) from mysql.table...., iTier在解析的时候会把插件a部分
+    分离出来,最终发送到mysql服务的sql应该是这个样子的 select field from mysql.table....
+    等数据获得以后再加载插件代码进而对字段field进行各种复杂处理
+
+  2、 mysql原生聚合函数和iTier插件的区别
+    iTier插件的定位是后端数据源很难实现的复杂处理实现,例如插件sum,是处理后端数据源无法
+    处理sum操作itier代替它完成的,但是如果后端数据源已经支持sum操作,比如说 mysql,那么当
+    你在sql中增加sum聚合函数时 是不会去调用插件逻辑的,而是直接发送到mysql服务让mysql自
+    己去实现
+
+  3、插件嵌套
+    支持插件嵌套,由于插件和后端数据源的函数在配置中都是以聚合函数的形式实现的,所以插件的
+    嵌套和原生函数是不能混合使用的
+	
+    例如 mysql中支持sum函数,现在我们有2个插件,名字分别是a、b, 那么下面这种书写方式是不支
+    持的  select..a(sum(b(field)))...from ....,	但是如果是下面这种格式是支持的
+    select..a(b(sum(field)))...from ....
+
+    即 插件书写的原则是插件在最外层 原生函数在最里层, 而且不能混合嵌套使用
+
+    换一句通俗的说法就是 只能是原生函数嵌套在插件里面,不支持插件嵌套在原生函数里面
+
+  4、插件的处理流程
+  	1) loader解析sql语句,把各个字段上的插件按照嵌套顺序依次解析,原sql语句被拆分成 插件信息
+       和 新sql语句
+  	2) 根据解析后的新sql,去后端获取数据
+  	3) 数据和插件信息一起返回给控制程序
+  	4) 控制程序调用每个字段的所有插件,最终完成操作
+
+十、sql拆分
+
+  如果一个配置语句里面 table_references 部分是来自不同的后端系统,或者有action嵌套、子 sql,
+  这个时候iTier就会把配置语句进行拆分,拆分时把 table_references 部分中 "表"作为基本单位
+
+  首先判断当前 "表" 是否采用别名,如果采用别名,在拆分的过程中就要判断配置中的"字段"是否有别
+  名前缀、是否是属于自己的,	然后分别对select_expr、table_references、where_definition、
+  groupby、orderby、limit进行拆分
+
+  1、select_expr
+  判断每个字段是否属于当前 "表"，如果属于就加入到当前字段对象中
+	
+  如果检查完毕没有属于当前"表"的字段,则说明当前"表"只起到一个辅助作用
+  我们会记录下当前表的类别是辅助表(辅助表是不会参与最后的数据整合的)
+	
+  然后检查 table_references 中 join部分的字段 获取属于当前"表"的字段 判断这些字段是否在已经
+  分拆出来的字段中(检查真实字段的名字),如果不在里面,则iTier会伪造一个字段对象并入到分拆字段中
+
+  最后检查所有分拆出来的字段是否含有聚合函数操作,如果有 标记当前"表" 为聚合表
+
+  2、table_references
+  将当前表对应的 table_references 分拆出来
+  join部分 on字段必须使用真实字段名,不能使用别名
+
+  3、where
+
+  如果当前"表"采用别名 则属于当前表的where条件会被拆分出来,否则所有where条件都会赋值给当前表
+  where部分
+
+  4、groupby
+  只有当前表是聚合表的时候,才会分拆groupby部分 而且如果当前表支持别名,则gropuby 字段必须别名
+  首先如果groupby 某字段和当前分拆好的字段对象的某个字段别名相同,则被分拆出
+	
+  其次寻找groupby字段对应的真实字段名,如果和这个真实字段名对应的 join部分 on字段名属于当前"表",
+  那么该字段也会被加入到groupby 中
+
+  5、orderby
+  目前orderby 字段中还不支持使用聚合函数,只能根据某个字段名进行排序
+  如果orderby 字段存在与分拆好的字段对象中 或者是属于当前"表"的 或者 当前表没有采用别名机制,则
+  该字段条件被分拆出
+
+  6、limit
+  如果配置中只有一个"表",则limit参数会被分拆
+  如果当前"表"是聚合表,limit参数也会被分拆
+  如果当前表是处于 table_references 中的第一"表",那么limit参数也会被分拆
+
+  7、join类型
+  如果当前表 处于 table_references join部分,则记录当前表join类型 inner join/left join
+
+  8、join对象信息
+  设置当前表和其他表join关系信息
+
+十一、mysql loader
+	
+  1、请求映射和解析聚合函数
+  控制层会传递配置内容到mysql loader中,mysql loader会把配置转换成自己的语法,即组合成一条sql
+  语句,同时会分析插件函数生成一个插件对象, 回调函数会把 数据和插件对象 返回给控制层,控制层然
+  后再去调用插件程序
+
+  2、目前支持的聚合函数
+  sum
+  floor
+  abs
+  ceil
+  pow
+  sin
+  cos
+  unix_timestamp
+  sqrt
+
+十二、action嵌套
+
+  1、支持本配置文件内嵌套  例如 当前配置文件中有action配置 a 和 b,a的配置里面调用b的写法为
+    select .... from action.b.....
+	
+  2、支持跨文件调用,此时需要设置完整的三层目录路径以上面a为例,如果a的配置文件为 test1/test2.json
+    而另外还有一个action配置c,其配置文件为 test3/test4.json, 那么 a调用c的配置写法为 
+    select .... from action.test3.test4.c.......
+
+  3、以第二个为例,a调用c,那么iTier内部请求c的url请求是继承a的
+
+     例如 请求 a 的 url假设为 :
+       localhost/data/项目名/test1/test2/a/where/xxx:eq:11/where/yyy:eq:22
+
+     那么iTier内部请求b的请求地址是这样的: 
+       localhost/data/项目名/test3/test4/c/where/xxx:eq:11/where/yyy:eq:22
+
+  4、iTier action嵌套 内部解析 采用 当前sql和嵌套action的sql进行整合的逻辑
+
+  5、columns
+  如果父级action columns配置为*,则新columns完全复用子action columns配置
+  反之,如果子action columns配置为*,则新columns完全复用父action columns配置
+
+  如果子action字段别名和父级action中某字段别名相同,则子action中字段对象被保留
+  如果子action字段别名和父级action中某字段加入父级action表前缀后相同,则子action字段被保留
+
+  如果父action中某真实字段前缀和子action表名字一样,并且字段名在子action字段中,则该子action字段被保留
+
+  6、table_references
+  子action的 table_references 部分不做处理,保持原样
+
+  7、where
+  目前父action中的where条件只能是子级action最终得到的字段名
+  否则不起作用
+
+  支持别名,iTier内部会替换成真实的字段名字
+
+  8、groupby
+  不支持父级action groupby
+  子action groupby 字段必须是select出的字段,支持别名、真实字段名
+
+  9、orderby
+  支持父级action orderby 和 子action orderby 均支持别名、真实字段名字(父级action中的真实字段名字其实
+  是子级action中的最终字段名字)
+	
+  如果子action没有orderby,则父级action中的所有orderby 将会被加入到子action中
+
+  如果父、子都有orderby 信息,则子级action中没有的会被加入其中
+
+  10、limit
+  支持 父级、子级action limit  书写格式都跟mysql一样,含义也相同
+  不过父级action limit 是以子actioin limit为基础的 
+  例如 父级action 如果是 limit 1,5 说明是从子actioin结果集中第二个开始截取5条数据
+  此时,如果子action 为 limit 0,10,则最终的新sql的limit 是 limit 1,5
+
+  如果父级action limit 条数超出 子action中条数,则依据子action limit设置
+
+十三、子sql调用
+
+  子sql支持目前仅限于 table_references 部分,即iTier会把子sql抽象成一个"表"
+  iTier在解析子sql的时候会把 子sql和父sql合并生成一个新的sql,然后再根据新的sql对象去解析、分拆
+  这里主要介绍 子sql和父sql合并过程
+
+  1、columns
+  如果父级sql columns 为 *,则新columns完全复用子sql columns
+  反之,如果子sql columns为 *,则新columns完全复用父级sql columns
+	
+  如果子sql字段别名和父级sql中某字段别名相同,则子sql字段对象被保留
+  如果子sql字段别名和父级sql中某字段加上父级sql表前缀后相同,则子sql字段对象被保留
+
+  如果父级sql中某真实字段前缀和子sql表名字一致,并且字段名字在子sql字段中,则该子sql字段被保留
+
+  2、table_references
+  子sql的 table_references 部分不做处理,保持原样
+
+  3、where
+  目前父action中的where条件只有在where条件前缀名字和子action前缀名字相同情况下才可以使用
+  否则不起作用
+
+  支持别名,iTier内部会替换成真实的字段名字
+
+  4、groupby
+  不支持父级sql groupby
+  子sql groupby 字段必须是select出的字段,可以是别名 也可以是真实字段
+
+  5、orderby
+  支持父级sql orderby 和 子sql orderby ---- 父级、子级sql orderby 必须是 字段的别名
+	
+  如果子sql没有orderby,则父级sql中的所有orderby 将会被加入到子sql中
+
+  如果父、子都有orderby 信息,则子级sql中没有的会被加入其中
+
+  6、limit
+  支持 父级、子级sql limit  书写格式都跟mysql一样,含义也相同
+  不过父级sql limit 是以子sql limit为基础的 
+  例如 父级sql 如果是 limit 1,5 说明是从子sql结果集中第二个开始截取5条数据
+  此时,如果子sql 为 limit 0,10,则最终的新sql的limit 是 limit 1,5
+
+  如果父级sql limit 条数超出 子sql中条数,则依据子sql limit设置
