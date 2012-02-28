@@ -10,35 +10,35 @@ var Lexter = require('./lexter.js');
 //var Cache = require('../cache/lcache.js').create('#SQL#', 8640000);
 
 var WHERE = {
-	EQ: 1,
-	GT: 2,
-	GE: 3,
-	LT: 4,
-	LE: 5,
-	NE: 6,
-	IN: 7,
-	NOTIN: 8,
-	LIKE: 9,
-	NOTLIKE: 10,
-	BETWEEN: 11,
-	ISNULL: 20,
-	NOTNULL: 21,
+  EQ: 1,
+  GT: 2,
+  GE: 3,
+  LT: 4,
+  LE: 5,
+  NE: 6,
+  IN: 7,
+  NOTIN: 8,
+  LIKE: 9,
+  NOTLIKE: 10,
+  BETWEEN: 11,
+  ISNULL: 20,
+  NOTNULL: 21,
 };
 
 var ORDER = {
-	ASC: 1,
-	DESC: 2,
+  ASC: 1,
+  DESC: 2,
 };
 
 var RELATEMAP = {
-	'=': WHERE.EQ,
-	'==': WHERE.EQ,
-	'!=': WHERE.NE,
-	'<>': WHERE.NE,
-	'>': WHERE.GT,
-	'>=': WHERE.GE,
-	'<': WHERE.LT,
-	'<=': WHERE.LE,
+  '=': WHERE.EQ,
+  '==': WHERE.EQ,
+  '!=': WHERE.NE,
+  '<>': WHERE.NE,
+  '>': WHERE.GT,
+  '>=': WHERE.GE,
+  '<': WHERE.LT,
+  '<=': WHERE.LE,
 };
 
 //merge elements in tks with certain key to a string with sep
@@ -55,13 +55,13 @@ function fetch(key, tks, sep) {
 
 //escape commas and keyword in certain string and push elements into an array
 function deal(tmp) {
-	var ret = [];
-	for (var i = 0; i < tmp.length; i++) {
-		if (tmp[i].type !== Lexter.types.KEYWORD && tmp[i].type !== Lexter.types.COMMAS) {
-			ret[ret.length] = tmp[i];
-		}
-	}
-	return ret;
+  var ret = [];
+  for (var i = 0; i < tmp.length; i++) {
+    if (tmp[i].type !== Lexter.types.KEYWORD && tmp[i].type !== Lexter.types.COMMAS) {
+      ret[ret.length] = tmp[i];
+    }
+  }
+  return ret;
 }
 
 //remove left and rigth parenthese of a string if it has
@@ -140,86 +140,86 @@ Insight.prototype.union = function(){
 /* {{{ public Insight.select() */
 // use tokens of a sql parse to several parts including columns, sources, where and so on
 Insight.prototype.select = function() {
-	if (Lexter.types.KEYWORD != this.tokens[0].type || ! (/^SELECT$/i.test(this.tokens[0].text))) {
-		throw new Error("SQL command should begin with keyword *SELECT*");
-	}
+  if (Lexter.types.KEYWORD != this.tokens[0].type || ! (/^SELECT$/i.test(this.tokens[0].text))) {
+    throw new Error("SQL command should begin with keyword *SELECT*");
+  }
 
-	return {
-		/*{{{*/
-		'columns': this.parseColumn(
-		1, this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^FROM$',
-		}), null, false),
-		'sources': this.parseSource(
-		1 + this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(FROM)$',
-		}), this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(WHERE|ORDER|GROUP|LIMIT|JOIN|INNER|OUTER|CROSE|LEFT|RIGHT|NATURAL)$',
-		}), {
-			type: Lexter.types.COMMAS,
-			text: ',',
-		},
-		true),
-		'joinmap': this.parseJoins(
-		this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(JOIN|INNER|OUTER|CROSS|LEFT|RIGHT|NATURAL)$',
-		}), this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(WHERE|ORDER|GROUP|LIMIT)$',
-		}), {
-			type: Lexter.types.KEYWORD,
-			text: '^(JOIN|INNER|OUTER|CROSS|LEFT|RIGHT|NATURAL)$'
-        }, false),
-		'where': this.parseWhere(
-		this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(WHERE)$',
-		}), this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(ORDER|GROUP|LIMIT)$',
-		}), {
-			type: Lexter.types.KEYWORD,
-			text: '^(AND)$',
-		},
-		true),
-		'groupby': this.parseGroupBy(
-		this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(GROUP)$',
-		}), this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(ORDER|LIMIT)$',
-		}), {
-			type: Lexter.types.COMMAS,
-			text: ',',
-		},
-		true),
-		'orderby': this.parseOrderBy(
-		this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(ORDER)$',
-		}), this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(LIMIT)$',
-		}), {
-			type: Lexter.types.COMMAS,
-			text: ',',
-		},
-		true),
-		'limits': this.parseLimit(
-		1 + this.lexter.indexOf({
-			type: Lexter.types.KEYWORD,
-			text: '^(LIMIT)$',
-		}), - 1, {
-			type: Lexter.types.COMMAS,
-			text: ',',
-		},
-		true)
-		/*}}}*/
+  return {
+  /*{{{*/
+  'columns': this.parseColumn(
+  1, this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^FROM$',
+  }), null, false),
+  'sources': this.parseSource(
+  1 + this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(FROM)$',
+  }), this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(WHERE|ORDER|GROUP|LIMIT|JOIN|INNER|OUTER|CROSE|LEFT|RIGHT|NATURAL)$',
+  }), {
+    type: Lexter.types.COMMAS,
+    text: ',',
+  },
+  true),
+  'joinmap': this.parseJoins(
+  this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(JOIN|INNER|OUTER|CROSS|LEFT|RIGHT|NATURAL)$',
+  }), this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(WHERE|ORDER|GROUP|LIMIT)$',
+  }), {
+    type: Lexter.types.KEYWORD,
+    text: '^(JOIN|INNER|OUTER|CROSS|LEFT|RIGHT|NATURAL)$'
+  }, false),
+  'where': this.parseWhere(
+  this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(WHERE)$',
+  }), this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(ORDER|GROUP|LIMIT)$',
+  }), {
+    type: Lexter.types.KEYWORD,
+    text: '^(AND)$',
+  },
+  true),
+  'groupby': this.parseGroupBy(
+  this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(GROUP)$',
+  }), this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(ORDER|LIMIT)$',
+  }), {
+    type: Lexter.types.COMMAS,
+    text: ',',
+  },
+  true),
+  'orderby': this.parseOrderBy(
+  this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(ORDER)$',
+  }), this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(LIMIT)$',
+  }), {
+    type: Lexter.types.COMMAS,
+    text: ',',
+  },
+  true),
+  'limits': this.parseLimit(
+  1 + this.lexter.indexOf({
+    type: Lexter.types.KEYWORD,
+    text: '^(LIMIT)$',
+  }), - 1, {
+    type: Lexter.types.COMMAS,
+    text: ',',
+  },
+  true)
+  /*}}}*/
 	};
 }
 /* }}} */
@@ -480,7 +480,7 @@ Insight.prototype.parseWhere = function(beg, end, sep, txt) {
   }
   if (null === sep) {
     sep = {
-type: Lexter.types.KEYWORD,
+      type: Lexter.types.KEYWORD,
       text: 'AND'
     }
   }
@@ -726,195 +726,195 @@ Insight.prototype.parseLimit = function(beg, end, sep, txt) {
 
 /* {{{ private Insight._maps() */
 Insight.prototype._maps = function(beg, end, sep, txt) {
-	if (null === sep) {
-		sep = {
-			type: Lexter.types.COMMAS,
-			text: ','
-		};
-	}
+  if (null === sep) {
+    sep = {
+      type: Lexter.types.COMMAS,
+      text: ','
+    };
+  }
 
-	var pos = 0,
-	key = '',
-	pre = undefined,
-	tmp = [],
-	ret = [];
-	end = (end < 0) ? this.tokens.length: end;
-	while (beg < end) {
-		pos = this.lexter.indexOf(sep, beg);
-		if (pos >= 0) {
-			tmp = this.tokens.slice(beg, pos);
-			beg = pos + 1;
-		} else {
-			tmp = this.tokens.slice(beg, end);
-			beg = end;
-		}
+  var pos = 0,
+      key = '',
+      pre = undefined,
+      tmp = [],
+      ret = [];
+  end = (end < 0) ? this.tokens.length: end;
+  while (beg < end) {
+    pos = this.lexter.indexOf(sep, beg);
+    if (pos >= 0) {
+      tmp = this.tokens.slice(beg, pos);
+      beg = pos + 1;
+    } else {
+      tmp = this.tokens.slice(beg, end);
+      beg = end;
+    }
 
-		pre = tmp[tmp.length - 2];
-		if (undefined === pre) {
-			pre = {
-				type: Lexter.types.OPERATOR,
-				text: '',
-			};
-		}
-		if (pre.type === Lexter.types.KEYWORD && /^as$/i.test(pre.text)) {
-			key = tmp[tmp.length - 1].text;
-			pos = - 2;
-		} else if (pre.type !== Lexter.types.OPERATOR && true === this.ualias[tmp[tmp.length - 1].type]) {
-			key = tmp[tmp.length - 1].text;
-			if (tmp[0].type === Lexter.types.KEYWORD && /^(all|distinct|distinctrow)$/i.test(tmp[0].text)) {
-				pos = 0;
-			} else {
-				pos = - 1;
-			}
-		} else {
-			key = fetch('text', tmp);
-			pos = 0;
-		}
+    pre = tmp[tmp.length - 2];
+    if (undefined === pre) {
+      pre = {
+        type: Lexter.types.OPERATOR,
+        text: '',
+      };
+    }
+    if (pre.type === Lexter.types.KEYWORD && /^as$/i.test(pre.text)) {
+      key = tmp[tmp.length - 1].text;
+      pos = - 2;
+    } else if (pre.type !== Lexter.types.OPERATOR && true === this.ualias[tmp[tmp.length - 1].type]) {
+      key = tmp[tmp.length - 1].text;
+      if (tmp[0].type === Lexter.types.KEYWORD && /^(all|distinct|distinctrow)$/i.test(tmp[0].text)) {
+        pos = 0;
+      } else {
+        pos = - 1;
+      }
+    } else {
+      key = fetch('text', tmp);
+      pos = 0;
+    }
 
-		if (0 === pos) {
-			ret[key] = tmp;
-		} else {
-			ret[key] = tmp.slice(0, pos);
-		}
+    if (0 === pos) {
+      ret[key] = tmp;
+    } else {
+      ret[key] = tmp.slice(0, pos);
+    }
 
-		if (true === txt) {
-			ret[key] = fetch('text', ret[key]);
-		}
-	}
-	return ret;
+    if (true === txt) {
+      ret[key] = fetch('text', ret[key]);
+    }
+  }
+  return ret;
 }
 /* }}} */
 
 /* {{{ public Parser.construct() */
 var Parser = function(sql, val) {
-	this.query = sql.toString().trim();
-	this.param = val;
-    this.ins = new Insight(this.query);
-	this.result = null;
+  this.query = sql.toString().trim();
+  this.param = val;
+  this.ins = new Insight(this.query);
+  this.result = null;
 }
 /* }}} */
 
 /* {{{ public Parser.get() */
 Parser.prototype.get = function() {
-    this.result = this.ins.divSql();
-	return this.result;
+  this.result = this.ins.divSql();
+  return this.result;
 }
 /* }}} */
 
 /*{{{ Parser.replaceTable()*/
 Parser.prototype.replaceSource = function(from, to) {
-	if (!this.result) {
-		this.get();
-	}
-    for(i in this.result){
-        for (var tk in this.result[i].sources) {
-            if (this.result[i]['sources'][tk].source == from) {
-                this.result[i]['sources'][tk].source = to;
-            }
-        }
+  if (!this.result) {
+    this.get();
+  }
+  for(i in this.result){
+    for (var tk in this.result[i].sources) {
+      if (this.result[i]['sources'][tk].source == from) {
+        this.result[i]['sources'][tk].source = to;
+      }
     }
+  }
 }
 /*}}}*/
 
 /*{{{ Parser.parseWhere()*/
 // get where part of a sql
 Parser.prototype.parseWhere = function(where) {
-    var lexter = Lexter.create(where);
-    var elements = lexter.getAll();
-    var beg = 0;
-    var end = elements.length;
-    var sep = {
-        type: Lexter.types.KEYWORD,
-        text: '^(AND)$',
+  var lexter = Lexter.create(where);
+  var elements = lexter.getAll();
+  var beg = 0;
+  var end = elements.length;
+  var sep = {
+    type: Lexter.types.KEYWORD,
+    text: '^(AND)$',
+  }
+  var txt = true;
+  if (beg > 0) {
+    beg += 1;
+  }
+  if (null === sep) {
+    sep = {
+      type: Lexter.types.KEYWORD,
+      text: 'AND'
     }
-    var txt = true;
-	if (beg > 0) {
-		beg += 1;
-	}
-	if (null === sep) {
-		sep = {
-			type: Lexter.types.KEYWORD,
-			text: 'AND'
-		}
-	}
-	var pos = 0,
-	key = '',
-	pre = null,
-	tmp = [],
-	ret = [],
-	column = null,
-	partime = null,
-	relate = null,
-	values = null;
-	end = (end < 0) ? elements.length: end;
-	while (beg < end) {
-		var not = false;
-		pos = lexter.indexOf(sep, beg);
-        if(pos > end){
-            pos = -1;
+  }
+  var pos = 0,
+      key = '',
+      pre = null,
+      tmp = [],
+      ret = [],
+      column = null,
+      partime = null,
+      relate = null,
+      values = null;
+  end = (end < 0) ? elements.length: end;
+  while (beg < end) {
+    var not = false;
+    pos = lexter.indexOf(sep, beg);
+    if(pos > end){
+      pos = -1;
+    }
+    if (pos >= 0) {
+      tmp = elements.slice(beg, pos);
+      beg = pos + 1;
+    } else {
+      tmp = elements.slice(beg, end);
+      beg = end;
+    }
+    if (tmp.length < 3) {
+      continue;
+    }
+    column = tmp.shift();
+    if (column.type === Lexter.types.COMMAS || column.type === Lexter.types.FUNCTION) {
+      continue;
+    }
+    partime = tmp.shift();
+    if (partime.type === Lexter.types.OPERATOR) {
+      if (undefined === RELATEMAP[partime.text]) {
+        throw new Error("Unrecognized operator");
+      }
+      relate = RELATEMAP[partime.text];
+      values = tmp;
+    } else if (partime.text.toLowerCase() === 'is') {
+      while (partime = tmp.shift()) {
+        if (partime.text.toLowerCase() === 'not') {
+          not = true;
         }
-		if (pos >= 0) {
-			tmp = elements.slice(beg, pos);
-			beg = pos + 1;
-		} else {
-			tmp = elements.slice(beg, end);
-			beg = end;
-		}
-		if (tmp.length < 3) {
-			continue;
-		}
-		column = tmp.shift();
-		if (column.type === Lexter.types.COMMAS || column.type === Lexter.types.FUNCTION) {
-			continue;
-		}
-		partime = tmp.shift();
-		if (partime.type === Lexter.types.OPERATOR) {
-			if (undefined === RELATEMAP[partime.text]) {
-				throw new Error("Unrecognized operator");
-			}
-			relate = RELATEMAP[partime.text];
-			values = tmp;
-		} else if (partime.text.toLowerCase() === 'is') {
-			while (partime = tmp.shift()) {
-				if (partime.text.toLowerCase() === 'not') {
-					not = true;
-				}
-				if (partime.text.toLowerCase() === 'null') {
-					relate = (not === true) ? WHERE.NOTNULL: WHERE.ISNULL;
-					values = null;
-					break;
-				}
-			}
-		} else if (partime.text.toLowerCase() === 'not') {
-			partime = tmp.shift();
-			if (partime.text.toLowerCase() === 'like') {
-				relate = WHERE.NOTLIKE;
-				values = tmp;
-			} else if (partime.text.toLowerCase() === 'in') {
-				relate = WHERE.NOTIN;
-				values = deal(tmp);
-			} else {
-				throw new Error();
-			}
-		} else if (partime.text.toLowerCase() === 'like') {
-			relate = WHERE.LIKE;
-			values = tmp;
-		} else if (partime.text.toLowerCase() === 'in') {
-			relate = WHERE.IN;
-			values = deal(tmp);
-		} else if (partime.text.toLowerCase() === 'between') {
-			relate = WHERE.BETWEEN;
-			values = deal(tmp);
-		} else {
-			//throw new Error();
-		}
-		ret[ret.length] = {
-			relate: relate,
-			values: values,
-			column: column,
-		};
-	}
-	return ret;
+        if (partime.text.toLowerCase() === 'null') {
+          relate = (not === true) ? WHERE.NOTNULL: WHERE.ISNULL;
+          values = null;
+          break;
+        }
+      }
+    } else if (partime.text.toLowerCase() === 'not') {
+      partime = tmp.shift();
+      if (partime.text.toLowerCase() === 'like') {
+        relate = WHERE.NOTLIKE;
+        values = tmp;
+      } else if (partime.text.toLowerCase() === 'in') {
+        relate = WHERE.NOTIN;
+        values = deal(tmp);
+      } else {
+        throw new Error();
+      }
+    } else if (partime.text.toLowerCase() === 'like') {
+      relate = WHERE.LIKE;
+      values = tmp;
+    } else if (partime.text.toLowerCase() === 'in') {
+      relate = WHERE.IN;
+      values = deal(tmp);
+    } else if (partime.text.toLowerCase() === 'between') {
+      relate = WHERE.BETWEEN;
+      values = deal(tmp);
+    } else {
+      //throw new Error();
+    }
+    ret[ret.length] = {
+      relate: relate,
+      values: values,
+      column: column,
+    };
+  }
+  return ret;
 }
 /*}}}*/
 
@@ -994,7 +994,7 @@ Parser.prototype.replaceWhere = function(from, to) {
 /*}}}*/
 
 exports.create = function(sql, data) {
-	return new Parser(sql, data);
+  return new Parser(sql, data);
 }
 
 exports.WHERE = WHERE;
